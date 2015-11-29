@@ -1,0 +1,134 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <openssl/aes.h>
+#define MAXLINE 500
+#define ENCRYPT 0
+#define DECRYPT 1
+
+void getkey( FILE *keystore, char pass[], int id, char outkey[] );
+int getch();
+
+int main(int argc, char *argv[])
+{
+	/*Save parameters in variables*/
+	FILE *keystore, *input, *output;
+	if ((input=fopen(argv[1], "rb"))==NULL)
+	{
+		printf ("Nie mogę otworzyć pliku do odczytu!\n");
+    	exit(1);
+    }
+    if ((keystore=fopen(argv[2], "r"))==NULL)
+	{
+		printf ("Nie mogę otworzyć pliku do odczytu!\n");
+    	exit(1);
+    }
+    if ((output=fopen(argv[3], "wb"))==NULL)
+	{
+		printf ("Nie mogę otworzyć pliku do odczytu!\n");
+    	exit(1);
+    }
+    int cryption = (int) strtol(argv[4], (char **)NULL, 10);
+    if ( cryption == 0) printf("Encryption mode!\n");
+    else if ( cryption == 1 ) printf("Decryption mode!\n");
+        
+    /*Input file to string*/
+    char * buffer = 0;
+	long length;
+	if (input)
+	{
+	  fseek (input, 0, SEEK_END);
+	  length = ftell (input);
+	  fseek (input, 0, SEEK_SET);
+	  buffer = malloc (length);
+	  if (buffer)
+	  {
+		fread (buffer, 1, length, input);
+	  }
+	  fclose (input);
+	}
+	printf("Po konwertowaniu: %s\n", buffer);
+    
+    /*Take password*/
+    char c,password[MAXLINE];
+    char correct[] = "thispasswordisverybadforencryption"; // change for password hash
+    int i;
+    do		 
+    {
+    	printf("Podaj haslo do keystore: ");
+    	i=0;
+	    while( (c=getch())!='\r' )
+		{
+	        password[i] = c;
+	        printf("*");
+	        i++;
+	    }
+	    printf("\n");
+	    password[i] = '\0';
+	}
+	while((strcmp(correct, password) != 0)); // strcmp return 0 if correct == password
+    //printf("Passoword: %s\n", password);
+    
+    unsigned char key[MAXLINE];
+    getkey(keystore, password, (int)strtol(argv[5], (char **)NULL, 10), key); // argv[5] - id key in keystore
+    printf("Klucz: %s\n", key);
+	
+    /*Prepare data for cryption*/
+    unsigned char enc_out[80];
+    unsigned char dec_out[80];
+
+    AES_KEY enc_key, dec_key;
+	AES_set_encrypt_key(key, 128, &enc_key);
+    AES_set_decrypt_key(key,128,&dec_key);
+	
+	/*if(cryption == 0) AES_encrypt(buffer, enc_out, &enc_key);      
+	else if(cryption == 1) AES_decrypt(enc_out, dec_out, &dec_key);*/
+	AES_encrypt(buffer, enc_out, &enc_key);      
+	AES_decrypt(enc_out, dec_out, &dec_key);
+
+	/*Save output*/
+    /*if (output != NULL)
+    {
+    	if(cryption == 0) fputs(enc_out, output);
+    	else if(cryption ==1) fputs(dec_out, output);
+        fclose(output);
+    }*/
+
+    
+    /*Show result*/
+    printf("original:\t");
+    for(i=0;*(buffer+i)!=0x00;i++)
+        printf("%X ",*(buffer+i));
+    printf("\nencrypted:\t");
+    for(i=0;*(enc_out+i)!=0x00;i++)
+        printf("%X ",*(enc_out+i));
+    printf("\ndecrypted:\t");
+    for(i=0;*(dec_out+i)!=0x00;i++)
+        printf("%X ",*(dec_out+i));
+    printf("\n");
+
+	fclose (output);
+	fclose (keystore);
+    return 0;
+} 
+void getkey( FILE *keystore, char pass[], int id, char outkey[] ) // save in outkey, xored with pass key from #id line
+{
+	printf("Id w keystore %d", id);
+	int i, c, l; // c for character, l line counter, i char counter
+	l=0;
+	unsigned char key[MAXLINE];
+	for (i=0; l<id && (c=getc(keystore))!= EOF ; i++) //set good line
+	{
+		if(c=='\n') l++;
+	}
+	for (i=0; i < MAXLINE && (c=getc(keystore))!=EOF && c!='\n'; ++i) //get key
+		key[i] = c^pass[i];
+	if (c == '\n')
+	{
+		key[i] = c;
+		++i;
+	}
+	key[i] = '\0';
+	strcpy(outkey, key);
+}
