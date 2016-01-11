@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html lang="pl">
+<head>
+	<meta charset="utf-8" />
+	<title>WBK!</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<link rel="stylesheet" href="style.css" type="text/css" />	
+	<img src="logowbk.png" alt="To naprawde logo WBK">
+</head>
+
+<body bgcolor="#00CC66">
+<br>
+Account:
+<input type="text" id="login" /><br>
+Password:
+<input type="text" id="password" /><br>
+<input type="button" id="button" value="Zaloguj" onclick="capture();" />	
+<script>
+function capture()
+{
+	var login = document.getElementById("login").value
+	var password = document.getElementById("password").value
+	document.write("Numer konta: "+login+" "+"Haslo: "+password);
+}
+</script>
+</body>
+</html>
